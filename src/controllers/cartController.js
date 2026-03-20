@@ -34,17 +34,19 @@ export async function viewCart(ctx) {
   }
 
   const items = ctx.session.orderBuilder.items
-
   const products = await productService.getProducts()
 
   let message = "🧾 *Order Summary*\n\n"
+  message += "```\n"
+  message += "Product           Qty   Price   Sub\n"
+  message += "-----------------------------------\n"
+
   let total = 0
   let totalItems = 0
 
   products.forEach(product => {
 
     const qty = items[product.id]
-
     if (!qty) return
 
     const subtotal = qty * product.price
@@ -52,9 +54,12 @@ export async function viewCart(ctx) {
     total += subtotal
     totalItems += qty
 
-    const name = product.name.padEnd(18, " ")
+    const name = product.name.padEnd(16, " ")
+    const qtyText = String(qty).padEnd(5, " ")
+    const price = `$${product.price}`.padEnd(7, " ")
+    const sub = `$${subtotal}`
 
-    message += `${name} x${qty}   $${subtotal}\n`
+    message += `${name}${qtyText}${price}${sub}\n`
 
   })
 
@@ -62,13 +67,15 @@ export async function viewCart(ctx) {
     return ctx.reply("🛒 Your cart is empty.")
   }
 
-  message += "\n━━━━━━━━━━━━━━\n"
-  message += `💰 *Total: $${total}*`
+  message += "-----------------------------------\n"
+  message += `Items: ${totalItems}\n`
+  message += `Total: $${total}\n`
+  message += "```"
 
   const keyboard = [
     [{ text: "✅ Checkout", callback_data: "checkout" }],
-    [{ text: "✏ Edit Order", callback_data: "start_order_builder" }],
-    [{ text: "❌ Cancel", callback_data: "cancel_order" }]
+    [{ text: "✏️ Edit Order", callback_data: "start_order_builder" }],
+    [{ text: "❌ Cancel Order", callback_data: "cancel_order" }]
   ]
 
   await ctx.reply(message, {
@@ -77,5 +84,4 @@ export async function viewCart(ctx) {
       inline_keyboard: keyboard
     }
   })
-
 }

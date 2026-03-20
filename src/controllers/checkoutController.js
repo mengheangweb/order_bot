@@ -14,13 +14,17 @@ export async function checkout(ctx) {
   const user = await findOrCreateUser(ctx)
 
   const order = await orderService.createOrder(user.id, items)
-
   const products = await productService.getProducts()
 
   let message = `✅ *Order Confirmed!*\n\n`
   message += `Order #${order.id}\n\n`
 
+  message += "```\n"
+  message += "Product           Qty   Price   Sub\n"
+  message += "-----------------------------------\n"
+
   let total = 0
+  let totalItems = 0
 
   products.forEach(product => {
 
@@ -29,14 +33,21 @@ export async function checkout(ctx) {
 
     const subtotal = qty * product.price
     total += subtotal
+    totalItems += qty
 
-    const name = product.name.padEnd(18, " ")
+    const name = product.name.padEnd(16, " ")
+    const qtyText = String(qty).padEnd(5, " ")
+    const price = `$${product.price}`.padEnd(7, " ")
+    const sub = `$${subtotal}`
 
-    message += `🦐 ${name} x${qty}   $${subtotal}\n`
+    message += `${name}${qtyText}${price}${sub}\n`
   })
 
-  message += "\n━━━━━━━━━━━━━━\n"
-  message += `💰 *Total: $${total}*\n\n`
+  message += "-----------------------------------\n"
+  message += `Items: ${totalItems}\n`
+  message += `Total: $${total}\n`
+  message += "```\n\n"
+
   message += "🚚 Our team will contact you soon for delivery."
 
   ctx.session.orderBuilder = null
@@ -50,5 +61,4 @@ export async function checkout(ctx) {
       ]
     }
   })
-
 }
