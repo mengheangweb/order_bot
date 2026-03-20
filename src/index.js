@@ -2,11 +2,19 @@ import "dotenv/config"
 import bot from "./bot/bot.js"
 
 async function start() {
+  try {
 
-  await bot.launch()
+    console.log("Starting bot...")
 
-  console.log("🤖 Bot started")
+    await bot.launch()
 
+    console.log("Telegram bot running 🚀")
+
+  } catch (err) {
+
+    console.error("Launch error:", err)
+
+  }
 }
 
 start()

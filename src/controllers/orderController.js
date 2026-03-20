@@ -65,9 +65,11 @@ export async function viewOrder(ctx) {
 
 export async function cancelOrder(ctx) {
 
-  await ctx.answerCbQuery()
+  if (!ctx.session) ctx.session = {}
 
   ctx.session.orderBuilder = null
 
-  await ctx.editMessageText("❌ Order cancelled.")
+  await ctx.answerCbQuery("❌ Order cancelled")
+
+  await ctx.reply("🛒 Your order has been cancelled.")
 }

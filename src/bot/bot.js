@@ -13,26 +13,35 @@ import { deliveryInfo } from "../controllers/deliveryInfoController.js"
 
 const bot = new Telegraf(process.env.BOT_TOKEN)
 
+console.log("BOT TOKEN:", process.env.BOT_TOKEN)
+
 bot.use(session())
 
 bot.start(startCommand)
+
 bot.command("products", showProducts)
 bot.command("support", support)
-bot.command("deliveryInfo", deliveryInfo)
+bot.command("delivery_info", deliveryInfo)
 
 bot.action(/product_(.+)/, handleProductClick)
 bot.action(/builder_inc_(\d+)/, builderIncrease)
 bot.action(/builder_dec_(\d+)/, builderDecrease)
+
 bot.action("builder_review", viewCart)
 bot.action("checkout", checkout)
 bot.action("my_orders", myOrders)
 bot.action(/order_(\d+)/, viewOrder)
+
 bot.action("cancel_order", cancelOrder)
 bot.action("start_order_builder", startOrderBuilder)
-bot.action("support", support)
 
 bot.hears("🦐 Order Seafood", startOrderBuilder)
 bot.hears("📦 My Orders", myOrders)
 bot.hears("☎️ Support", support)
 bot.hears("🚚 Delivery Info", deliveryInfo)
+
+bot.catch((err, ctx) => {
+  console.error("Bot error:", err)
+})
+
 export default bot

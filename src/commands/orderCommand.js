@@ -5,31 +5,47 @@ export async function renderOrderBuilder(ctx) {
   ensureOrderSession(ctx)
 
   const products = await productService.getProducts()
-  const items = ctx.session.orderBuilder.items
+  const { items, lastChanged } = ctx.session.orderBuilder
 
-  let message = "🦐 *Build Your Order*\n\n"
+  let message = "🦐 *Build Your Seafood Order*\n\n"
+  message += "```\n"
+  message += "Product           Price   Qty\n"
+  message += "--------------------------------\n"
 
   const keyboard = []
-  let totalItems = 0
 
-  products.forEach(product => {
+  let totalItems = 0
+  let totalPrice = 0
+
+  for (const product of products) {
 
     const qty = items[product.id] || 0
+    const subtotal = qty * product.price
+
     totalItems += qty
+    totalPrice += subtotal
 
-    const dots = ".".repeat(Math.max(1, 15 - product.name.length))
+    const name = product.name.padEnd(16, " ")
+    const price = `$${product.price}`.padEnd(7, " ")
 
-    message += `${product.name} ${dots} ${qty}\n`
+    const highlight = product.id === lastChanged ? " ✅" : ""
+
+    message += `${name}${price}x${qty}${highlight}\n`
 
     keyboard.push([
-      { text: `${product.name} ➕`, callback_data: `builder_inc_${product.id}` },
-      { text: `${product.name} ➖`, callback_data: `builder_dec_${product.id}` }
+      { text: "➖", callback_data: `builder_dec_${product.id}` },
+      { text: `${product.name} (${qty})`, callback_data: "noop" },
+      { text: "➕", callback_data: `builder_inc_${product.id}` }
     ])
+  }
 
-  })
+  message += "--------------------------------\n"
+  message += `Items: ${totalItems}\n`
+  message += `Total: $${totalPrice}\n`
+  message += "```"
 
-  keyboard.push([{ text: `🛒 Review (${totalItems})`, callback_data: "builder_review" }])
-  keyboard.push([{ text: "❌ Cancel", callback_data: "cancel_order" }])
+  keyboard.push([{ text: "🛒 Review Order", callback_data: "builder_review" }])
+  keyboard.push([{ text: "❌ Cancel Order", callback_data: "cancel_order" }])
 
   const extra = {
     parse_mode: "Markdown",
@@ -41,7 +57,6 @@ export async function renderOrderBuilder(ctx) {
   }
 
   return ctx.reply(message, extra)
-
 }
 
 async function safeEditMessage(ctx, message, extra) {
@@ -56,20 +71,20 @@ async function safeEditMessage(ctx, message, extra) {
 
     throw err
   }
-
 }
 
 export async function startOrderBuilder(ctx) {
 
   if (!ctx.session) ctx.session = {}
 
-  // Only create cart if it doesn't exist
   if (!ctx.session.orderBuilder) {
-    ctx.session.orderBuilder = { items: {} }
+    ctx.session.orderBuilder = {
+      items: {},
+      lastChanged: null
+    }
   }
 
   return renderOrderBuilder(ctx)
-
 }
 
 export async function builderDecrease(ctx) {
@@ -80,20 +95,23 @@ export async function builderDecrease(ctx) {
   const items = ctx.session.orderBuilder.items
 
   if (items[productId]) {
+
     items[productId]--
 
     if (items[productId] <= 0) {
       delete items[productId]
       await ctx.answerCbQuery("❌ Item removed from cart")
     } else {
-      await ctx.answerCbQuery("➖ Item quantity decreased")
+      await ctx.answerCbQuery("➖ Quantity decreased")
     }
+
   } else {
     await ctx.answerCbQuery("⚠️ Item not in cart")
   }
 
-  return renderOrderBuilder(ctx)
+  ctx.session.orderBuilder.lastChanged = productId
 
+  return renderOrderBuilder(ctx)
 }
 
 export async function builderIncrease(ctx) {
@@ -105,21 +123,21 @@ export async function builderIncrease(ctx) {
 
   items[productId] = (items[productId] || 0) + 1
 
+  ctx.session.orderBuilder.lastChanged = productId
+
   await ctx.answerCbQuery("✅ Item added to cart")
 
   return renderOrderBuilder(ctx)
-
 }
 
 function ensureOrderSession(ctx) {
 
-  if (!ctx.session) {
-    ctx.session = {}
-  }
+  if (!ctx.session) ctx.session = {}
 
   if (!ctx.session.orderBuilder) {
-    ctx.session.orderBuilder = { items: {} }
+    ctx.session.orderBuilder = {
+      items: {},
+      lastChanged: null
+    }
   }
-
 }
-
