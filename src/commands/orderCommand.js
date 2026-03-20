@@ -77,7 +77,6 @@ export async function builderDecrease(ctx) {
   ensureOrderSession(ctx)
 
   const productId = Number(ctx.match[1])
-
   const items = ctx.session.orderBuilder.items
 
   if (items[productId]) {
@@ -85,10 +84,13 @@ export async function builderDecrease(ctx) {
 
     if (items[productId] <= 0) {
       delete items[productId]
+      await ctx.answerCbQuery("❌ Item removed from cart")
+    } else {
+      await ctx.answerCbQuery("➖ Item quantity decreased")
     }
+  } else {
+    await ctx.answerCbQuery("⚠️ Item not in cart")
   }
-
-  await ctx.answerCbQuery()
 
   return renderOrderBuilder(ctx)
 
@@ -99,12 +101,11 @@ export async function builderIncrease(ctx) {
   ensureOrderSession(ctx)
 
   const productId = Number(ctx.match[1])
-
   const items = ctx.session.orderBuilder.items
 
   items[productId] = (items[productId] || 0) + 1
 
-  await ctx.answerCbQuery()
+  await ctx.answerCbQuery("✅ Item added to cart")
 
   return renderOrderBuilder(ctx)
 
